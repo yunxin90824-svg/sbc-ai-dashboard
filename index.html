@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SBC团队 AI建设目标与进度看板</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f0f4f8;color:#1a202c;line-height:1.6}
+.header{background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 100%);color:#fff;padding:28px 40px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header h1{font-size:24px;font-weight:600;letter-spacing:.5px}
+.header p{font-size:13px;opacity:.8;margin-top:4px}
+.container{max-width:1400px;margin:0 auto;padding:24px}
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tab{padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:#4a5568;transition:all .2s}
+.tab:hover{background:#edf2f7}
+.tab.active{background:#2b6cb0;color:#fff;box-shadow:0 2px 4px rgba(43,108,176,.3)}
+.section{display:none}
+.section.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center}
+.kpi-card .value{font-size:32px;font-weight:700;color:#2b6cb0;margin:8px 0 4px}
+.kpi-card .label{font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:.5px}
+.kpi-card .sub{font-size:12px;color:#a0aec0;margin-top:2px}
+.kpi-card.green .value{color:#38a169}
+.kpi-card.red .value{color:#e53e3e}
+.kpi-card.orange .value{color:#dd6b20}
+.card{background:#fff;border-radius:10px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:20px}
+.card h3{font-size:16px;font-weight:600;color:#2d3748;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #edf2f7}
+.card h3 .badge{display:inline-block;font-size:11px;background:#edf2f7;color:#4a5568;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:400}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f7fafc;color:#4a5568;font-weight:600;text-align:left;padding:10px 14px;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+th.num{text-align:right}
+th.center,th[colspan]{text-align:center}
+th.grp-skill{background:#ebf4ff;color:#2b6cb0;border-right:2px solid #bee3f8}
+th.grp-agent{background:#f0fff4;color:#276749}
+td{padding:9px 14px;border-bottom:1px solid #edf2f7}
+td.col-skill{background:#f7faff}
+td.col-agent{background:#f7fff9}
+td.col-sep{border-right:2px solid #bee3f8}
+tbody tr:nth-child(even) td{background:#fafbfc}
+tbody tr:nth-child(even) td.col-skill{background:#eef4ff}
+tbody tr:nth-child(even) td.col-agent{background:#eefff5}
+tbody tr:hover td{background:#edf2f7}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.center{text-align:center}
+.pct-bar{display:flex;align-items:center;gap:8px}
+.pct-bar .bar{flex:1;height:8px;background:#edf2f7;border-radius:4px;overflow:hidden;min-width:60px}
+.pct-bar .bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.pct-bar .pct{font-size:12px;color:#4a5568;min-width:45px;text-align:right}
+.filter-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-bar label{font-size:12px;color:#718096;font-weight:500}
+.filter-bar select{padding:5px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;color:#2d3748;background:#fff;cursor:pointer}
+.filter-bar select:focus{outline:none;border-color:#2b6cb0;box-shadow:0 0 0 2px rgba(43,108,176,.15)}
+.status-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.status-tag.已完成{background:#c6f6d5;color:#22543d}
+.status-tag.进行中{background:#bee3f8;color:#2a4365}
+.status-tag.规划设计{background:#fefcbf;color:#744210}
+.status-tag.待启动{background:#fed7d7;color:#742a2a}
+.status-tag.已暂停{background:#feebc8;color:#7b341e}
+.status-tag.已终止{background:#fed7d7;color:#742a2a}
+.chart-container{position:relative;height:300px;width:100%}
+.chart-container-sm{position:relative;height:240px;width:100%}
+.reason-list{list-style:none;padding:0}
+.reason-list li{padding:8px 12px;border-bottom:1px solid #edf2f7;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.reason-list li:last-child{border-bottom:none}
+.reason-list .count{background:#edf2f7;color:#4a5568;padding:1px 8px;border-radius:10px;font-size:11px}
+.summary-table td:first-child{font-weight:500}
+.total-row td{font-weight:700;background:#f0f4f8 !important;border-top:2px solid #e2e8f0}
+.empty-state{text-align:center;padding:40px;color:#a0aec0;font-size:14px}
+.expandable{cursor:pointer;user-select:none}
+.expandable td:first-child::before{content:'▸ ';font-size:11px;color:#a0aec0;display:inline-block;width:14px}
+.expandable.open td:first-child::before{content:'▾ '}
+.detail-row td{background:#f8fafc !important;padding:6px 14px 6px 42px;font-size:12px;border-bottom:1px solid #edf2f7}
+.detail-row:hover td{background:#edf2f7 !important}
+.detail-row td .status-tag{font-size:10px;padding:1px 6px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SBC团队 AI建设目标与进度看板</h1>
+  <p>FY2027 业务树 · Skill及Agent视角 · 数据截至 2026-09</p>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(0)">业务总览</div>
+    <div class="tab" onclick="switchTab(1)">AI Skill 进度</div>
+  </div>
+
+  <!-- ========== 业务总览 ========== -->
+  <div class="section active" id="sec0">
+    <div class="kpi-row" id="overview-kpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>SBC团队业务分布 <span class="badge">L2层级</span></h3>
+        <p style="font-size:12px;color:#718096;margin-bottom:12px">每个圆圈代表一个L2职能，横轴为岗位人数，纵轴为需要FTE，圆圈大小代表该职能三年累计节降FTE总量。</p>
+        <div class="chart-container"><canvas id="chart-biz-dist"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>业务节降目标 <span class="badge">Skill vs Agent</span></h3>
+        <div class="chart-container"><canvas id="chart-savings-target"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>业务分布明细</h3>
+      <div class="filter-bar">
+        <label>职能筛选：</label>
+        <select id="filter-biz" onchange="renderBizTable()"><option value="">全部</option></select>
+      </div>
+      <table id="tbl-biz"><thead><tr>
+        <th>职能</th><th class="num">岗位人数</th><th class="num">需要FTE</th>
+        <th class="num">FY27节省FTE</th><th class="num">FY28-29节省FTE</th>
+        <th class="num">节降占比</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h3>节降目标明细 <span class="badge">按职能 × 实现路径</span></h3>
+      <table id="tbl-savings"><thead><tr>
+        <th rowspan="2">职能</th><th colspan="3" class="center grp-skill">业务自行开发Skill实现</th>
+        <th colspan="3" class="center grp-agent">通过Agent进一步提升</th>
+        <th rowspan="2" class="num">节降FTE合计</th><th rowspan="2" class="num">所需FTE</th><th rowspan="2" class="num">节降/FTE占比</th>
+      </tr><tr>
+        <th class="num grp-skill">FY27</th><th class="num grp-skill">FY28-29</th><th class="num grp-skill">小计</th>
+        <th class="num grp-agent">FY27</th><th class="num grp-agent">FY28-29</th><th class="num grp-agent">小计</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- ========== AI Skill 进度 ========== -->
+  <div class="section" id="sec1">
+    <!-- 2.1 Skill全览 -->
+    <div class="kpi-row" id="skill-kpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Skill状态分布</h3>
+        <div class="chart-container-sm"><canvas id="chart-skill-status"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>暂停/终止原因分析 <span class="badge" id="pt-count"></span></h3>
+        <ul class="reason-list" id="reason-list"></ul>
+      </div>
+    </div>
+
+    <!-- 2.2 Skill节降汇总 -->
+    <div class="card">
+      <h3>Skill节降汇总 <span class="badge">按职能</span></h3>
+      <div class="filter-bar">
+        <label>职能筛选：</label>
+        <select id="filter-skill-func" onchange="renderSkillSavings()"><option value="">全部</option></select>
+      </div>
+      <table id="tbl-skill-savings"><thead><tr>
+        <th>职能</th><th class="num">FY27节降FTE</th><th class="num">FY28-29节降FTE</th>
+        <th class="num">节降合计</th><th class="num">占SBC总节降比</th><th class="num">占本职能FTE比</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+
+    <!-- 2.3 分职能研发进度 -->
+    <div class="card">
+      <h3>分职能研发进度 <span class="badge">点击展开明细</span></h3>
+      <div class="filter-bar">
+        <label>职能筛选：</label>
+        <select id="filter-func-status" onchange="renderFuncStatus()"><option value="">全部</option></select>
+      </div>
+      <table id="tbl-func-status"><thead><tr>
+        <th>职能</th><th class="num">FY27节降FTE</th>
+        <th class="num">FY28-29节降FTE</th><th class="num">节降合计</th><th>完成率</th><th style="border:none"></th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+
+    <!-- 2.4 分人员研发进度 -->
+    <div class="card">
+      <h3>分人员研发进度 <span class="badge">点击展开明细</span></h3>
+      <div class="filter-bar">
+        <label>人员筛选：</label>
+        <select id="filter-person" onchange="renderPersonStatus()"><option value="">全部</option></select>
+      </div>
+      <table id="tbl-person-status"><thead><tr>
+        <th>人员</th><th class="num">FY27节降FTE</th>
+        <th class="num">FY28-29节降FTE</th><th class="num">节降合计</th><th>完成率</th><th style="border:none"></th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const DATA = {
+  l1_total: {"headcount": 9.0, "fte": 10.16, "fy27": 1.209, "fy2829": 0.735},
+  l2_distribution: [
+    {"name":"合规管理","headcount":1.64,"fte":1.68,"fy27":0.23,"fy2829":0.0},
+    {"name":"员工平台","headcount":1.81,"fte":1.89,"fy27":0.46,"fy2829":0.103},
+    {"name":"财报","headcount":2.29,"fte":2.29,"fy27":0.349,"fy2829":0.632},
+    {"name":"系统及流程控制","headcount":2.13,"fte":3.18,"fy27":0.12,"fy2829":0.0},
+    {"name":"Partnership","headcount":1.13,"fte":1.13,"fy27":0.05,"fy2829":0.0}
+  ],
+  dim_func: [
+    {"is_agent":"Skill","业务树-L2职能":"Partnership","FY27":0.05,"FY2829":0.0},
+    {"is_agent":"Skill","业务树-L2职能":"合规管理","FY27":0.14,"FY2829":0.0},
+    {"is_agent":"Skill","业务树-L2职能":"员工平台","FY27":0.37,"FY2829":0.0},
+    {"is_agent":"Skill","业务树-L2职能":"系统及流程控制","FY27":0.12,"FY2829":0.0},
+    {"is_agent":"Skill","业务树-L2职能":"财报","FY27":0.28,"FY2829":0.19},
+    {"is_agent":"Agent","业务树-L2职能":"合规管理","FY27":0.10,"FY2829":0.0},
+    {"is_agent":"Agent","业务树-L2职能":"员工平台","FY27":0.09,"FY2829":0.103},
+    {"is_agent":"Agent","业务树-L2职能":"财报","FY27":0.069,"FY2829":0.442},
+    {"is_agent":"Agent","业务树-L2职能":"系统及流程控制","FY27":0.0,"FY2829":0.0}
+  ],
+  skill_by_func: [
+    {"业务树-L2职能":"Partnership","FY27":0.05,"FY2829":0.0,"所需FTE":0.15},
+    {"业务树-L2职能":"合规管理","FY27":0.14,"FY2829":0.0,"所需FTE":0.66},
+    {"业务树-L2职能":"员工平台","FY27":0.37,"FY2829":0.0,"所需FTE":1.50},
+    {"业务树-L2职能":"系统及流程控制","FY27":0.12,"FY2829":0.0,"所需FTE":0.24},
+    {"业务树-L2职能":"财报","FY27":0.28,"FY2829":0.19,"所需FTE":1.70}
+  ],
+  skill_by_func_status: [
+    {"业务树-L2职能":"Partnership","Skill状态":"已完成","FY27":0.05,"FY2829":0.0},
+    {"业务树-L2职能":"合规管理","Skill状态":"已完成","FY27":0.11,"FY2829":0.0},
+    {"业务树-L2职能":"合规管理","Skill状态":"进行中","FY27":0.03,"FY2829":0.0},
+    {"业务树-L2职能":"员工平台","Skill状态":"已完成","FY27":0.365,"FY2829":0.0},
+    {"业务树-L2职能":"员工平台","Skill状态":"进行中","FY27":0.005,"FY2829":0.0},
+    {"业务树-L2职能":"系统及流程控制","Skill状态":"已完成","FY27":0.06,"FY2829":0.0},
+    {"业务树-L2职能":"系统及流程控制","Skill状态":"进行中","FY27":0.06,"FY2829":0.0},
+    {"业务树-L2职能":"财报","Skill状态":"已完成","FY27":0.09,"FY2829":0.12},
+    {"业务树-L2职能":"财报","Skill状态":"进行中","FY27":0.15,"FY2829":0.06},
+    {"业务树-L2职能":"财报","Skill状态":"待启动","FY27":0.04,"FY2829":0.01}
+  ],
+  skill_by_person_status: [
+    {"Skill建设人员":"區慕婷","Skill状态":"已完成","FY27":0.10,"FY2829":0.0},
+    {"Skill建设人员":"區慕婷","Skill状态":"进行中","FY27":0.005,"FY2829":0.0},
+    {"Skill建设人员":"王韵欣","Skill状态":"已完成","FY27":0.225,"FY2829":0.0},
+    {"Skill建设人员":"袁婕禎","Skill状态":"已完成","FY27":0.11,"FY2829":0.0},
+    {"Skill建设人员":"趙晓蕾","Skill状态":"已完成","FY27":0.06,"FY2829":0.0},
+    {"Skill建设人员":"趙晓蕾","Skill状态":"进行中","FY27":0.04,"FY2829":0.0},
+    {"Skill建设人员":"趙晓蕾","Skill状态":"待启动","FY27":0.04,"FY2829":0.01},
+    {"Skill建设人员":"鍾紫琪","Skill状态":"已完成","FY27":0.10,"FY2829":0.0},
+    {"Skill建设人员":"鍾紫琪","Skill状态":"进行中","FY27":0.09,"FY2829":0.0},
+    {"Skill建设人员":"關中卓","Skill状态":"进行中","FY27":0.08,"FY2829":0.01},
+    {"Skill建设人员":"陳愷欣","Skill状态":"已完成","FY27":0.05,"FY2829":0.0},
+    {"Skill建设人员":"高歌","Skill状态":"已完成","FY27":0.03,"FY2829":0.12},
+    {"Skill建设人员":"高歌","Skill状态":"进行中","FY27":0.03,"FY2829":0.05}
+  ],
+  total_fy27: 1.209,
+  total_fy2829: 0.735,
+  total_fte: 10.16,
+  total_skills: 80,
+  active_skills: 36,
+  paused_terminated: 44,
+  status_counts: {"已暂停":30,"已完成":22,"已终止":14,"进行中":8,"待启动":6},
+  pause_reasons: {
+    "由系统或Agent替代实现节降":22,
+    "节降人力过少或ROI不足，暂缓搭建":13,
+    "AI技术局限，准确性或数据抓取效率不够":6,
+    "与其他Skill合并或已纳入标准方案":3,
+    "外部依赖未就绪，待条件具备后重启":1
+  }
+};
+
+// Individual skill records for drill-down (excl 已暂停/已终止)
+const SKILL_DETAIL = [
+{"s":"BOCI RSU归属指令复核","st":"进行中","p":"區慕婷","f":"员工平台","fy27":0.005,"fy2829":0},
+{"s":"2014计划美股归属明细检查","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.0025,"fy2829":0},
+{"s":"2024计划港股归属明细检查","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.0025,"fy2829":0},
+{"s":"2014计划BOCI美股归属指引的制作与发送","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.015,"fy2829":0},
+{"s":"2024计划BOCI港股归属指引的制作与发送","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.015,"fy2829":0},
+{"s":"2014计划BOCI美股执行结果数据检查与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.005,"fy2829":0},
+{"s":"2014计划BOCI美股执行结果数据检查与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.005,"fy2829":0},
+{"s":"2024计划BOCI港股执行结果数据检查与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.025,"fy2829":0},
+{"s":"2024计划BOCI港股执行结果数据检查与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.025,"fy2829":0},
+{"s":"2014&2024计划MS RSU归属指引的制作与发送","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.02,"fy2829":0},
+{"s":"2014&2024计划MS RSU归属指引的制作与发送","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.01,"fy2829":0},
+{"s":"2014&2024计划MS RSU归属执行结果数据记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.02,"fy2829":0},
+{"s":"2014&2024计划MS RSU归属执行结果数据记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.01,"fy2829":0},
+{"s":"MS平台数据月度检查与核对","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.02,"fy2829":0},
+{"s":"MS平台数据月度检查与核对","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.01,"fy2829":0},
+{"s":"BOCI平台数据检查与核对","st":"已完成","p":"袁婕禎","f":"员工平台","fy27":0.02,"fy2829":0},
+{"s":"BOCI平台数据检查与核对","st":"已完成","p":"袁婕禎","f":"员工平台","fy27":0.02,"fy2829":0},
+{"s":"CPM数据检查与核对","st":"已完成","p":"鍾紫琪","f":"系统及流程控制","fy27":0.06,"fy2829":0},
+{"s":"存股数据检查与核对","st":"进行中","p":"鍾紫琪","f":"系统及流程控制","fy27":0.06,"fy2829":0},
+{"s":"ESOP运营入账底稿制作","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.004,"fy2829":0},
+{"s":"ESOP运营入账底稿制作","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.004,"fy2829":0},
+{"s":"ESOP运营入账底稿制作","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.002,"fy2829":0},
+{"s":"STC海外税金关联交易复核与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.01,"fy2829":0},
+{"s":"STC海外税金关联交易复核与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.01,"fy2829":0},
+{"s":"STC海外税金关联交易复核与记录","st":"已完成","p":"王韵欣","f":"员工平台","fy27":0.01,"fy2829":0},
+{"s":"2014计划内部调拨数据检查及打款","st":"已完成","p":"區慕婷","f":"员工平台","fy27":0.07,"fy2829":0},
+{"s":"2024计划内部调拨数据检查及打款","st":"已完成","p":"區慕婷","f":"员工平台","fy27":0.03,"fy2829":0},
+{"s":"Equity return股权申报数据整理","st":"进行中","p":"鍾紫琪","f":"合规管理","fy27":0.03,"fy2829":0},
+{"s":"两地互换股数余额监控与风险提示","st":"已完成","p":"鍾紫琪","f":"合规管理","fy27":0.02,"fy2829":0},
+{"s":"NDDR报表准备通知和复核","st":"已完成","p":"鍾紫琪","f":"合规管理","fy27":0.02,"fy2829":0},
+{"s":"SBC/LTC数据自动提取及整理","st":"进行中","p":"關中卓","f":"财报","fy27":0.06,"fy2829":0.01},
+{"s":"季度核算","st":"待启动","p":"趙晓蕾","f":"财报","fy27":0.04,"fy2829":0.01},
+{"s":"月结检查","st":"已完成","p":"高歌","f":"财报","fy27":0.027,"fy2829":0.02},
+{"s":"智能分录生成","st":"已完成","p":"高歌","f":"财报","fy27":0.003,"fy2829":0.1},
+{"s":"季度LTC费用重算","st":"已完成","p":"趙晓蕾","f":"财报","fy27":0.01,"fy2829":0},
+{"s":"授予合理性分析","st":"进行中","p":"關中卓","f":"财报","fy27":0.02,"fy2829":0},
+{"s":"季度SBC费用重算","st":"进行中","p":"趙晓蕾","f":"财报","fy27":0.04,"fy2829":0},
+{"s":"季度SBC离职率分析","st":"已完成","p":"趙晓蕾","f":"财报","fy27":0.01,"fy2829":0},
+{"s":"费用波动归因分析","st":"已完成","p":"趙晓蕾","f":"财报","fy27":0.04,"fy2829":0},
+{"s":"Earnings SBC披露编写","st":"进行中","p":"高歌","f":"财报","fy27":0.03,"fy2829":0.05},
+{"s":"因故解雇个案进度维护和查询","st":"已完成","p":"袁婕禎","f":"合规管理","fy27":0.06,"fy2829":0},
+{"s":"Partnership報告自動生成","st":"已完成","p":"陳愷欣","f":"Partnership","fy27":0.05,"fy2829":0},
+{"s":"港美股上市公司董高权益披露汇总助手","st":"已完成","p":"袁婕禎","f":"合规管理","fy27":0.01,"fy2829":0},
+{"s":"识别账单记录股数及资金变动 等","st":"规划设计","p":"N/A","f":"员工平台","fy27":0.02,"fy2829":0,"a":"Agent"},
+{"s":"归属STC税金 等","st":"规划设计","p":"N/A","f":"员工平台","fy27":0,"fy2829":0.03,"a":"Agent"},
+{"s":"Cap Table 报表产出和校验","st":"规划设计","p":"N/A","f":"合规管理","fy27":0.04,"fy2829":0,"a":"Agent"},
+{"s":"持股数据整理","st":"规划设计","p":"N/A","f":"合规管理","fy27":0.04,"fy2829":0,"a":"Agent"},
+{"s":"通知函发送","st":"规划设计","p":"N/A","f":"合规管理","fy27":0.02,"fy2829":0,"a":"Agent"},
+{"s":"SBC团队知识库构建 等","st":"规划设计","p":"N/A","f":"财报","fy27":0,"fy2829":0.096,"a":"Agent"},
+{"s":"费用Breakdown生成 等","st":"规划设计","p":"N/A","f":"财报","fy27":0,"fy2829":0.011,"a":"Agent"},
+{"s":"系统数据分发 等","st":"规划设计","p":"N/A","f":"财报","fy27":0.02,"fy2829":0,"a":"Agent"}
+];
+
+// Dedup: exclude Agents, merge same-name skills
+const SKILL_DEDUP = (function(){
+  const skills = SKILL_DETAIL.filter(d=>d.a!=='Agent');
+  const map = {};
+  skills.forEach(d=>{
+    if(!map[d.s]) map[d.s] = {s:d.s, st:d.st, p:d.p, f:d.f, fy27:0, fy2829:0};
+    map[d.s].fy27 += d.fy27;
+    map[d.s].fy2829 += d.fy2829;
+  });
+  return Object.values(map);
+})();
+
+const COLORS = ['#2b6cb0','#38a169','#dd6b20','#e53e3e','#805ad5','#d69e2e','#319795','#d53f8c'];
+const STATUS_COLORS = {'已完成':'#38a169','进行中':'#3182ce','规划设计':'#d69e2e','待启动':'#e53e3e','已暂停':'#dd6b20','已终止':'#718096'};
+
+function fmt(v, d=3){ return v == null ? '-' : Number(v).toFixed(d); }
+function pct(v, total){ return total === 0 ? '0%' : (v/total*100).toFixed(1)+'%'; }
+function pctNum(v, total){ return total === 0 ? 0 : v/total*100; }
+function barHTML(pctVal, color){
+  return `<div class="pct-bar"><div class="bar"><div class="bar-fill" style="width:${Math.min(pctVal,100).toFixed(1)}%;background:${color}"></div></div><span class="pct">${pctVal.toFixed(1)}%</span></div>`;
+}
+
+// ===== TAB SWITCHING =====
+function switchTab(idx){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.querySelectorAll('.section').forEach((s,i)=>s.classList.toggle('active',i===idx));
+}
+
+// ===== RENDER FUNCTIONS =====
+function renderOverviewKPIs(){
+  const d = DATA.l1_total;
+  const totalSavings = d.fy27 + d.fy2829;
+  const html = [
+    {label:'SBC团队总人数',value:d.headcount.toFixed(1),sub:'正式员工',cls:''},
+    {label:'需要FTE总量',value:d.fte.toFixed(2),sub:'含外包折算',cls:''},
+    {label:'FY27 节省FTE',value:d.fy27.toFixed(3),sub:'占需要FTE '+pct(d.fy27,d.fte),cls:'green'},
+    {label:'FY28-29 节省FTE',value:d.fy2829.toFixed(3),sub:'占需要FTE '+pct(d.fy2829,d.fte),cls:'green'},
+    {label:'三年累计节降',value:totalSavings.toFixed(3),sub:'占需要FTE '+pct(totalSavings,d.fte),cls:'green'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
+  document.getElementById('overview-kpis').innerHTML = html;
+}
+
+function renderBizCharts(){
+  const l2 = DATA.l2_distribution;
+  const labels = l2.map(d=>d.name);
+  // Bubble chart: x=headcount, y=fte, r=fy27+fy2829
+  new Chart(document.getElementById('chart-biz-dist'),{
+    type:'bubble',
+    data:{datasets: l2.map((d,i)=>({
+      label:d.name,
+      data:[{x:d.headcount, y:d.fte, r:Math.max((d.fy27+d.fy2829)*30,8)}],
+      backgroundColor:COLORS[i]+'cc',
+      borderColor:COLORS[i],
+    }))},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{
+        x:{title:{display:true,text:'岗位人数',font:{size:12}},beginAtZero:true},
+        y:{title:{display:true,text:'需要FTE',font:{size:12}},beginAtZero:true}
+      }
+    }
+  });
+
+  // Stacked bar: Skill vs Agent savings
+  const funcs = l2.map(d=>d.name);
+  const dimFunc = DATA.dim_func;
+  const skillFY27 = funcs.map(f=>{const r=dimFunc.find(d=>d['业务树-L2职能']===f&&d.is_agent==='Skill');return r?r.FY27:0;});
+  const skillFY28 = funcs.map(f=>{const r=dimFunc.find(d=>d['业务树-L2职能']===f&&d.is_agent==='Skill');return r?r.FY2829:0;});
+  const agentFY27 = funcs.map(f=>{const r=dimFunc.find(d=>d['业务树-L2职能']===f&&d.is_agent==='Agent');return r?r.FY27:0;});
+  const agentFY28 = funcs.map(f=>{const r=dimFunc.find(d=>d['业务树-L2职能']===f&&d.is_agent==='Agent');return r?r.FY2829:0;});
+
+  new Chart(document.getElementById('chart-savings-target'),{
+    type:'bar',
+    data:{labels:funcs,datasets:[
+      {label:'Skill FY27',data:skillFY27,backgroundColor:'#2b6cb0',stack:'fy27'},
+      {label:'Agent FY27',data:agentFY27,backgroundColor:'#bee3f8',stack:'fy27'},
+      {label:'Skill FY28-29',data:skillFY28,backgroundColor:'#38a169',stack:'fy28'},
+      {label:'Agent FY28-29',data:agentFY28,backgroundColor:'#c6f6d5',stack:'fy28'},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'节省FTE'},beginAtZero:true}}
+    }
+  });
+}
+
+function renderBizTable(){
+  const filter = document.getElementById('filter-biz').value;
+  const l2 = DATA.l2_distribution.filter(d=>!filter||d.name===filter);
+  const totalSavings = DATA.l1_total.fy27 + DATA.l1_total.fy2829;
+  const tbody = document.querySelector('#tbl-biz tbody');
+  let totalHC=0,totalFTE=0,totalFY27=0,totalFY28=0;
+  tbody.innerHTML = l2.map(d=>{
+    totalHC+=d.headcount; totalFTE+=d.fte; totalFY27+=d.fy27; totalFY28+=d.fy2829;
+    const savings = d.fy27+d.fy2829;
+    const pctVal = pctNum(savings,totalSavings);
+    return `<tr><td>${d.name}</td><td class="num">${fmt(d.headcount,2)}</td><td class="num">${fmt(d.fte,2)}</td>
+      <td class="num">${fmt(d.fy27)}</td><td class="num">${fmt(d.fy2829)}</td>
+      <td class="num">${pct(savings,totalSavings)}</td></tr>`;
+  }).join('');
+  if(l2.length>1){
+    tbody.innerHTML += `<tr class="total-row"><td>合计</td><td class="num">${totalHC.toFixed(2)}</td><td class="num">${totalFTE.toFixed(2)}</td>
+      <td class="num">${totalFY27.toFixed(3)}</td><td class="num">${totalFY28.toFixed(3)}</td>
+      <td class="num">100%</td></tr>`;
+  }
+}
+
+function renderSavingsTable(){
+  const funcs = DATA.l2_distribution.map(d=>d.name);
+  const dimFunc = DATA.dim_func;
+  const skillByFunc = DATA.skill_by_func;
+  const l2Map = {};
+  DATA.l2_distribution.forEach(d=>{l2Map[d.name]=d;});
+  const tbody = document.querySelector('#tbl-savings tbody');
+  let tSFY27=0,tSFY28=0,tAFY27=0,tAFY28=0;
+  tbody.innerHTML = funcs.map(f=>{
+    const s = dimFunc.find(d=>d['业务树-L2职能']===f&&d.is_agent==='Skill')||{FY27:0,FY2829:0};
+    const a = dimFunc.find(d=>d['业务树-L2职能']===f&&d.is_agent==='Agent')||{FY27:0,FY2829:0};
+    const sf = skillByFunc.find(d=>d['业务树-L2职能']===f)||{所需FTE:0};
+    const l2 = l2Map[f]||{fte:0};
+    const totalFTE = l2.fte;
+    tSFY27+=s.FY27; tSFY28+=s.FY2829; tAFY27+=a.FY27; tAFY28+=a.FY2829;
+    const totalSavings = s.FY27+s.FY2829+a.FY27+a.FY2829;
+    const pctVal = totalFTE>0 ? (totalSavings/totalFTE*100) : 0;
+    return `<tr><td>${f}</td><td class="num col-skill">${fmt(s.FY27)}</td><td class="num col-skill">${fmt(s.FY2829)}</td><td class="num col-skill col-sep">${fmt(s.FY27+s.FY2829)}</td>
+      <td class="num col-agent">${fmt(a.FY27)}</td><td class="num col-agent">${fmt(a.FY2829)}</td><td class="num col-agent">${fmt(a.FY27+a.FY2829)}</td>
+      <td class="num">${fmt(totalSavings)}</td><td class="num">${fmt(totalFTE,2)}</td><td class="num">${pctVal.toFixed(1)}%</td></tr>`;
+  }).join('');
+  tbody.innerHTML += `<tr class="total-row"><td>合计</td><td class="num col-skill">${fmt(tSFY27)}</td><td class="num col-skill">${fmt(tSFY28)}</td><td class="num col-skill col-sep">${fmt(tSFY27+tSFY28)}</td>
+    <td class="num col-agent">${fmt(tAFY27)}</td><td class="num col-agent">${fmt(tAFY28)}</td><td class="num col-agent">${fmt(tAFY27+tAFY28)}</td>
+    <td class="num">${fmt(tSFY27+tSFY28+tAFY27+tAFY28)}</td>
+    <td class="num">${DATA.l2_distribution.reduce((s,d)=>s+d.fte,0).toFixed(2)}</td><td class="num">-</td></tr>`;
+}
+
+function renderSkillKPIs(){
+  const d = DATA;
+  const activePct = (d.active_skills/d.total_skills*100).toFixed(0);
+  const ptPct = (d.paused_terminated/d.total_skills*100).toFixed(0);
+  const html = [
+    {label:'Skill总数',value:d.total_skills,sub:'来自钉钉AI表格',cls:''},
+    {label:'现行有效',value:d.active_skills,sub:`占比 ${activePct}%`,cls:'green'},
+    {label:'暂停/终止',value:d.paused_terminated,sub:`占比 ${ptPct}%`,cls:'red'},
+    {label:'已完成',value:d.status_counts['已完成']||0,sub:`占现行有效 ${pct(d.status_counts['已完成']||0, d.active_skills)}`,cls:'green'},
+    {label:'进行中',value:(d.status_counts['进行中']||0)+(d.status_counts['待启动']||0),sub:`进行中${d.status_counts['进行中']||0} / 待启动${d.status_counts['待启动']||0}`,cls:'orange'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="sub">${k.sub}</div></div>`).join('');
+  document.getElementById('skill-kpis').innerHTML = html;
+}
+
+function renderSkillStatusChart(){
+  const counts = DATA.status_counts;
+  const total = DATA.total_skills;
+  // Merge 已暂停 + 已终止
+  const merged = [
+    {label:'已完成', value:counts['已完成']||0, color:'#38a169'},
+    {label:'进行中', value:counts['进行中']||0, color:'#3182ce'},
+    {label:'待启动', value:counts['待启动']||0, color:'#e53e3e'},
+    {label:'暂停/终止', value:(counts['已暂停']||0)+(counts['已终止']||0), color:'#a0aec0'},
+  ];
+  const labels = merged.map(d=>`${d.label}  ${d.value}个 (${(d.value/total*100).toFixed(0)}%)`);
+  const values = merged.map(d=>d.value);
+  const colors = merged.map(d=>d.color);
+  new Chart(document.getElementById('chart-skill-status'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:values,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:12},padding:12}}}}
+  });
+}
+
+function renderReasons(){
+  const reasons = DATA.pause_reasons;
+  const sorted = Object.entries(reasons).sort((a,b)=>b[1]-a[1]);
+  const total = sorted.reduce((s,r)=>s+r[1],0);
+  document.getElementById('pt-count').textContent = `共${total}个`;
+  document.getElementById('reason-list').innerHTML = sorted.map(([k,v])=>
+    `<li><span>${k}</span><span class="count">${v}个 (${(v/total*100).toFixed(0)}%)</span></li>`
+  ).join('');
+}
+
+function renderSkillSavings(){
+  const filter = document.getElementById('filter-skill-func').value;
+  const data = DATA.skill_by_func.filter(d=>!filter||d['业务树-L2职能']===filter);
+  const totalSBC = DATA.total_fy27 + DATA.total_fy2829;
+  const tbody = document.querySelector('#tbl-skill-savings tbody');
+  let tFY27=0,tFY28=0,tFTE=0;
+  tbody.innerHTML = data.map(d=>{
+    const total = d.FY27+d.FY2829;
+    tFY27+=d.FY27; tFY28+=d.FY2829; tFTE+=d.所需FTE;
+    return `<tr><td>${d['业务树-L2职能']}</td><td class="num">${fmt(d.FY27)}</td><td class="num">${fmt(d.FY2829)}</td>
+      <td class="num">${fmt(total)}</td>
+      <td class="num">${pct(total,totalSBC)}</td>
+      <td class="num">${d.所需FTE>0?pct(total,d.所需FTE):'-'}</td></tr>`;
+  }).join('');
+  if(data.length>1){
+    const tTotal = tFY27+tFY28;
+    tbody.innerHTML += `<tr class="total-row"><td>合计</td><td class="num">${fmt(tFY27)}</td><td class="num">${fmt(tFY28)}</td>
+      <td class="num">${fmt(tTotal)}</td><td class="num">${pct(tTotal,totalSBC)}</td><td class="num">-</td></tr>`;
+  }
+}
+
+// Track expanded rows for drill-down
+const expandedRows = {func: new Set(), person: new Set()};
+
+function detailRowsHTML(skills){
+  const completed = skills.filter(s=>s.st==='已完成');
+  const incomplete = skills.filter(s=>s.st!=='已完成');
+  let html = '';
+  if(completed.length){
+    const cFY27 = completed.reduce((s,d)=>s+d.fy27,0);
+    const cFY28 = completed.reduce((s,d)=>s+d.fy2829,0);
+    html += `<tr class="detail-row"><td colspan="5" style="font-weight:600;color:#22543d;background:#f0fff4;padding-left:28px">已完成（${completed.length}项）</td></tr>`;
+    completed.forEach(s=>{
+      html += `<tr class="detail-row"><td style="padding-left:42px">${s.s}</td><td class="num">${fmt(s.fy27)}</td><td class="num">${fmt(s.fy2829)}</td><td class="num">${fmt(s.fy27+s.fy2829)}</td><td><span class="status-tag ${s.st}">${s.st}</span></td></tr>`;
+    });
+    html += `<tr class="detail-row" style="font-weight:500"><td style="padding-left:42px">小计</td><td class="num">${fmt(cFY27)}</td><td class="num">${fmt(cFY28)}</td><td class="num">${fmt(cFY27+cFY28)}</td><td></td></tr>`;
+  }
+  if(incomplete.length){
+    const iFY27 = incomplete.reduce((s,d)=>s+d.fy27,0);
+    const iFY28 = incomplete.reduce((s,d)=>s+d.fy2829,0);
+    html += `<tr class="detail-row"><td colspan="5" style="font-weight:600;color:#742a2a;background:#fff5f5;padding-left:28px">未完成（${incomplete.length}项）</td></tr>`;
+    incomplete.forEach(s=>{
+      html += `<tr class="detail-row"><td style="padding-left:42px">${s.s}</td><td class="num">${fmt(s.fy27)}</td><td class="num">${fmt(s.fy2829)}</td><td class="num">${fmt(s.fy27+s.fy2829)}</td><td><span class="status-tag ${s.st}">${s.st}</span></td></tr>`;
+    });
+    html += `<tr class="detail-row" style="font-weight:500"><td style="padding-left:42px">小计</td><td class="num">${fmt(iFY27)}</td><td class="num">${fmt(iFY28)}</td><td class="num">${fmt(iFY27+iFY28)}</td><td></td></tr>`;
+  }
+  return html;
+}
+
+function renderFuncStatus(){
+  const filter = document.getElementById('filter-func-status').value;
+  const data = SKILL_DEDUP;
+  // Total per function
+  const funcTotals = {};
+  data.forEach(d=>{
+    const f = d.f;
+    if(!funcTotals[f]) funcTotals[f] = {FY27:0,FY2829:0};
+    funcTotals[f].FY27 += d.fy27;
+    funcTotals[f].FY2829 += d.fy2829;
+  });
+  // Completed per function
+  const funcCompleted = {};
+  data.filter(d=>d.st==='已完成').forEach(d=>{
+    const f = d.f;
+    if(!funcCompleted[f]) funcCompleted[f] = {FY27:0,FY2829:0};
+    funcCompleted[f].FY27 += d.fy27;
+    funcCompleted[f].FY2829 += d.fy2829;
+  });
+  const funcs = Object.keys(funcTotals).filter(f=>!filter||f===filter);
+  funcs.sort((a,b)=>funcTotals[b].FY27+funcTotals[b].FY2829-(funcTotals[a].FY27+funcTotals[a].FY2829));
+  const tbody = document.querySelector('#tbl-func-status tbody');
+  let html = '';
+  let gFY27=0,gFY28=0,gCompFY27=0,gCompFY28=0;
+  funcs.forEach(f=>{
+    const total = funcTotals[f].FY27+funcTotals[f].FY2829;
+    const completed = funcCompleted[f]||{FY27:0,FY2829:0};
+    const compFTE = completed.FY27+completed.FY2829;
+    const pctVal = total>0?pctNum(compFTE,total):0;
+    gFY27+=funcTotals[f].FY27; gFY28+=funcTotals[f].FY2829;
+    gCompFY27+=completed.FY27; gCompFY28+=completed.FY2829;
+    const isOpen = expandedRows.func.has(f);
+    html += `<tr class="expandable${isOpen?' open':''}" data-key="${f}" data-type="func">
+      <td>${f}</td><td class="num">${fmt(funcTotals[f].FY27)}</td><td class="num">${fmt(funcTotals[f].FY2829)}</td>
+      <td class="num">${fmt(total)}</td><td>${barHTML(pctVal,'#38a169')}</td><td></td></tr>`;
+    if(isOpen){
+      const skills = data.filter(d=>d.f===f);
+      html += detailRowsHTML(skills);
+    }
+  });
+  // Total row
+  const gTotal = gFY27+gFY28;
+  const gComp = gCompFY27+gCompFY28;
+  const gPct = gTotal>0?pctNum(gComp,gTotal):0;
+  html += `<tr class="total-row"><td>合计</td><td class="num">${fmt(gFY27)}</td><td class="num">${fmt(gFY28)}</td>
+    <td class="num">${fmt(gTotal)}</td><td>${barHTML(gPct,'#38a169')}</td><td></td></tr>`;
+  tbody.innerHTML = html;
+}
+
+function renderPersonStatus(){
+  const filterPerson = document.getElementById('filter-person').value;
+  const data = SKILL_DEDUP;
+  // Total per person
+  const personTotals = {};
+  data.forEach(d=>{
+    const p = d.p;
+    if(!personTotals[p]) personTotals[p] = {FY27:0,FY2829:0};
+    personTotals[p].FY27 += d.fy27;
+    personTotals[p].FY2829 += d.fy2829;
+  });
+  // Completed per person
+  const personCompleted = {};
+  data.filter(d=>d.st==='已完成').forEach(d=>{
+    const p = d.p;
+    if(!personCompleted[p]) personCompleted[p] = {FY27:0,FY2829:0};
+    personCompleted[p].FY27 += d.fy27;
+    personCompleted[p].FY2829 += d.fy2829;
+  });
+  const persons = Object.keys(personTotals).filter(p=>!filterPerson||p===filterPerson);
+  persons.sort((a,b)=>personTotals[b].FY27+personTotals[b].FY2829-(personTotals[a].FY27+personTotals[a].FY2829));
+  const tbody = document.querySelector('#tbl-person-status tbody');
+  let html = '';
+  let gFY27=0,gFY28=0,gCompFY27=0,gCompFY28=0;
+  persons.forEach(p=>{
+    const total = personTotals[p].FY27+personTotals[p].FY2829;
+    const completed = personCompleted[p]||{FY27:0,FY2829:0};
+    const compFTE = completed.FY27+completed.FY2829;
+    const pctVal = total>0?pctNum(compFTE,total):0;
+    gFY27+=personTotals[p].FY27; gFY28+=personTotals[p].FY2829;
+    gCompFY27+=completed.FY27; gCompFY28+=completed.FY2829;
+    const isOpen = expandedRows.person.has(p);
+    html += `<tr class="expandable${isOpen?' open':''}" data-key="${p}" data-type="person">
+      <td>${p}</td><td class="num">${fmt(personTotals[p].FY27)}</td><td class="num">${fmt(personTotals[p].FY2829)}</td>
+      <td class="num">${fmt(total)}</td><td>${barHTML(pctVal,'#38a169')}</td><td></td></tr>`;
+    if(isOpen){
+      const skills = data.filter(d=>d.p===p);
+      html += detailRowsHTML(skills);
+    }
+  });
+  // Total row
+  const gTotal = gFY27+gFY28;
+  const gComp = gCompFY27+gCompFY28;
+  const gPct = gTotal>0?pctNum(gComp,gTotal):0;
+  html += `<tr class="total-row"><td>合计</td><td class="num">${fmt(gFY27)}</td><td class="num">${fmt(gFY28)}</td>
+    <td class="num">${fmt(gTotal)}</td><td>${barHTML(gPct,'#38a169')}</td><td></td></tr>`;
+  tbody.innerHTML = html;
+}
+
+// ===== INIT =====
+function init(){
+  // Populate filters
+  const funcs = DATA.l2_distribution.map(d=>d.name);
+  ['filter-biz','filter-skill-func','filter-func-status'].forEach(id=>{
+    const sel = document.getElementById(id);
+    funcs.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+  });
+  const persons = [...new Set(SKILL_DEDUP.map(d=>d.p))].filter(p=>p!=='N/A').sort();
+  const selPerson = document.getElementById('filter-person');
+  persons.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;selPerson.appendChild(o);});
+
+  renderOverviewKPIs();
+  renderBizCharts();
+  renderBizTable();
+  renderSavingsTable();
+  renderSkillKPIs();
+  renderSkillStatusChart();
+  renderReasons();
+  renderSkillSavings();
+  renderFuncStatus();
+  renderPersonStatus();
+
+  // Click delegation for expandable rows
+  document.getElementById('tbl-func-status').querySelector('tbody').addEventListener('click',function(e){
+    const row = e.target.closest('.expandable');
+    if(!row) return;
+    const key = row.dataset.key;
+    expandedRows.func.has(key)?expandedRows.func.delete(key):expandedRows.func.add(key);
+    renderFuncStatus();
+  });
+  document.getElementById('tbl-person-status').querySelector('tbody').addEventListener('click',function(e){
+    const row = e.target.closest('.expandable');
+    if(!row) return;
+    const key = row.dataset.key;
+    expandedRows.person.has(key)?expandedRows.person.delete(key):expandedRows.person.add(key);
+    renderPersonStatus();
+  });
+}
+init();
+</script>
+</body>
+</html>
