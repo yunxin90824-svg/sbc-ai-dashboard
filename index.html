@@ -1278,9 +1278,9 @@ function renderSkillStatusChart(){
   const merged = [
     {label:'已完成', value:counts['已完成']||0, color:'#38a169'},
     {label:'进行中', value:counts['进行中']||0, color:'#3182ce'},
-    {label:'规划设计', value:counts['规划设计']||0, color:'#d69e2e'},
-    {label:'研发实现', value:counts['研发实现']||0, color:'#805ad5'},
     {label:'待启动', value:counts['待启动']||0, color:'#e53e3e'},
+    {label:'已暂停', value:counts['已暂停']||0, color:'#dd6b20'},
+    {label:'已终止', value:counts['已终止']||0, color:'#718096'},
   ].filter(d=>d.value>0);
   const labels = merged.map(d=>`${d.label}  ${d.value}个 (${(d.value/total*100).toFixed(0)}%)`);
   const values = merged.map(d=>d.value);
